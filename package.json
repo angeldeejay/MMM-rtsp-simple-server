@@ -1,0 +1,31 @@
+{
+  "name": "MMM-rtsp-simple-server",
+  "version": "1.0.0",
+  "description": "Connects to a RTMP/RTSP/HLS Bridge for Wyze Cam server and display cameras",
+  "main": "MMM-rtsp-simple-server.js",
+  "author": "Andrés Vanegas",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "bin/postinstall.sh"
+  },
+  "devDependencies": {
+    "grunt": "latest",
+    "grunt-eslint": "latest",
+    "grunt-jsonlint": "latest",
+    "grunt-markdownlint": "^1.0.13",
+    "grunt-stylelint": "latest",
+    "grunt-yamllint": "latest",
+    "http-proxy-middleware": "^2.0.6",
+    "stylelint-config-standard": "latest",
+    "time-grunt": "latest"
+  },
+  "dependencies": {
+    "@videojs/http-streaming": "^2.14.2",
+    "axios": "^0.27.2",
+    "child-process": "^1.0.2",
+    "js-yaml": "^4.1.0",
+    "nocache": "^3.0.4",
+    "video.js": "^7.20.2",
+    "yaml": "^2.1.1"
+  }
+}

@@ -80,7 +80,7 @@ module.exports = NodeHelper.create({
 		var newSources = payloadSources.filter(x => !currentSources.includes(x));
 
 		if (removedSources.length + newSources.length > 0) {
-			receivedConfigSources.forEach(x => this.rtspServerDefaults.paths[x.replace(/[^a-z0-9]+/ig, "_")] = { source: x })
+			receivedConfigSources.forEach(x => this.rtspServerDefaults.paths[x.replace(/[^a-z0-9]+/ig, "_")] = { source: x, sourceProtocol: 'tcp' })
 			this.sources = [];
 			for (var key in this.rtspServerDefaults.paths) {
 				if (this.rtspServerDefaults.paths.hasOwnProperty(key)) {

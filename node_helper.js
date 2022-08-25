@@ -33,11 +33,10 @@ module.exports = NodeHelper.create({
 		logLevel: 'info',
 		logDestinations: ["file", "stdout"],
 		logFile: __dirname + "/bin/rtsp-simple-server.log",
-		readTimeout: "30s",
-		writeTimeout: "30s",
+		readTimeout: "10s",
+		writeTimeout: "10s",
 		readBufferCount: 1024,
-		api: "yes",
-		apiAddress: "127.0.0.1:9997",
+		api: "no",
 		metrics: "no",
 		pprof: "no",
 		rtspDisable: "yes",
@@ -146,16 +145,6 @@ module.exports = NodeHelper.create({
 	setProxy: function () {
 		var self = this;
 		this.expressApp.set("etag", false);
-		this.expressApp.use("/" + this.name + "/v1/*",
-			nocache(),
-			createProxyMiddleware({
-				target: "http://localhost:9997", // target host with the same base path
-				changeOrigin: true, // needed for virtual hosted sites
-				pathRewrite: function (path, _) {
-					return path.replace(new RegExp("^/" + self.name + "/v1/"), "/v1/");
-				},
-			})
-		);
 		this.expressApp.use("/" + this.name + "/stream/*",
 			nocache(),
 			createProxyMiddleware({

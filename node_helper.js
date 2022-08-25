@@ -99,14 +99,14 @@ module.exports = NodeHelper.create({
 
 	resetRtspServer: function () {
 		var self = this;
+		if (self.rtspServer !== null) {
+			try { self.rtspServer.kill(); } catch (_) { }
+		}
 		this.readyState = false;
 		fs.writeFile(__dirname + '/bin/rtsp-simple-server.yml', yaml.dump(
 			this.rtspServerDefaults,
 			{ noCompatMode: true }),
 			function (err) {
-				if (self.rtspServer !== null) {
-					try { self.rtspServer.kill(); } catch (_) { }
-				}
 				self.rtspServer = spawn(
 					__dirname + '/bin/rtsp-simple-server',
 					[__dirname + '/bin/rtsp-simple-server.yml'],

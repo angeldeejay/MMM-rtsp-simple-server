@@ -24,6 +24,7 @@ Module.register("MMM-rtsp-simple-server", {
 		height: 350,
 		width: 700,
 		animationSpeed: 400,
+		mode: 'rotate',
 		sources: [],
 	},
 	logPrefix: "MMM-rtsp-simple-server :: ",
@@ -35,9 +36,10 @@ Module.register("MMM-rtsp-simple-server", {
 	wrapper: null,
 	message: null,
 	messageWrapper: null,
-	playerWrapper: null,
-	player: null,
+	playerWrappers: [],
+	players: [],
 	sources: [],
+	sourcesOrder: [],
 	readyState: false,
 	currentIndex: 0,
 
@@ -47,7 +49,15 @@ Module.register("MMM-rtsp-simple-server", {
 			...this.defaults,
 			...this.config,
 		};
-		this.rotateSource();
+		for (var i in this.config.sources) {
+			this.playerWrappers[i] = null;
+			this.players[i] = null;
+		}
+		if (this.config.mode === 'rotate') {
+			this.rotateSource();
+		} else if (this.config.mode === 'tiles') {
+			this.tileSources();
+		}
 		this.sendNotification("SET_CONFIG", {
 			...this.config,
 			__protocol: window.location.protocol,
@@ -55,17 +65,26 @@ Module.register("MMM-rtsp-simple-server", {
 		});
 	},
 
+	cleanName: function (x) {
+		return x.replace(/[^a-z0-9]+/ig, "_");
+	},
+
 	updateSources: function (sources) {
-		const validSources = this.config.sources.map(x => x.replace(/[^a-z0-9]+/ig, "_"));
-		var currentSources = this.sources.map(x => x.name);
-		var payloadSources = sources.filter(x => validSources.indexOf(x.name) !== -1).map(x => x.name);
+		const validSources = this.config.sources.map(this.cleanName);
+		var currentSources = Object.keys(this.sources);
+		var payloadSources = Object.keys(sources).filter(x => validSources.indexOf(x) !== -1);
 
 		var removedSources = currentSources.filter(x => !payloadSources.includes(x));
 		var newSources = payloadSources.filter(x => !currentSources.includes(x));
 
 		if (removedSources.length + newSources.length > 0) {
 			this.currentIndex = 0;
-			this.sources = sources.filter(x => validSources.indexOf(x.name) !== -1);
+			for (const [key, value] of Object.entries(sources)) {
+				if (validSources.indexOf(key) !== -1) {
+					this.sources[key] = value;
+				}
+			}
+			this.sourcesOrder = Object.keys(this.sources);
 			Log.info(this.logPrefix + "Sources updated", this.sources)
 			this.updateDom(this.config.animationSpeed);
 		}
@@ -92,6 +111,39 @@ Module.register("MMM-rtsp-simple-server", {
 		}
 	},
 
+	rotateSourcesOrder: function () {
+		this.sourcesOrder.unshift(this.sourcesOrder.pop());
+	},
+
+	tileSources: function () {
+		var self = this;
+		var nextWaitTime = 0;
+		if (this.config.mode !== 'tiles') {
+			this.updateDom(this.config.animationSpeed);
+		} else if (!this.readyState) {
+			this.message = this.translate("LOADING");
+			this.updateDom(this.config.animationSpeed);
+			nextWaitTime = this.config.retryDelay;
+		} else if (Object.keys(this.sources).length == 0) {
+			this.message = this.translate("NO_SOURCES");
+			this.updateDom(this.config.animationSpeed);
+			nextWaitTime = this.config.retryDelay;
+		} else {
+			this.message = null;
+			if (!this.players.every((_, i) => {
+				return this.elementReady('playerWrappers', i) &&
+					this.playerWrappers[i].offsetParent !== null &&
+					this.elementReady('players', i);
+			})) {
+				this.showPlayers();
+				nextWaitTime = this.config.animationSpeed;
+			} else {
+				nextWaitTime = this.config.updateInterval;
+			}
+		}
+		setTimeout(function () { self.tileSources(); }, Math.max(nextWaitTime, 1000));
+	},
+
 	/**
 	 * Change current source and activate player
 	 * @param {object} source source data to be show
@@ -99,37 +151,36 @@ Module.register("MMM-rtsp-simple-server", {
 	rotateSource: function () {
 		var self = this;
 		var nextWaitTime = 0;
-		if (!this.readyState) {
-			this.currentIndex = 0;
+		if (this.config.mode !== 'rotate') {
+			this.updateDom(this.config.animationSpeed);
+		} else if (!this.readyState) {
 			this.message = this.translate("LOADING");
 			this.updateDom(this.config.animationSpeed);
 			nextWaitTime = this.config.retryDelay;
-		} else if (this.sources.length == 0) {
-			this.currentIndex = 0;
+		} else if (Object.keys(this.sources) == 0) {
 			this.message = this.translate("NO_SOURCES");
 			this.updateDom(this.config.animationSpeed);
 			nextWaitTime = this.config.retryDelay;
 		} else {
-			if (this.currentIndex > this.sources.length - 1) {
-				this.currentIndex = 0;
-				nextWaitTime = this.config.retryDelay;
-			} else if (this.player === null) {
-				this.showPlayer();
+			if (!this.elementReady('players', 0)) {
+				this.showPlayers();
 				nextWaitTime = this.config.animationSpeed;
 			} else {
-				const source = this.sources[this.currentIndex];
+				this.message = null;
+				const key = this.sourcesOrder[0];
+				const source = this.sources[key];
 				nextWaitTime = this.config.updateInterval;
-				Log.log("Showing source " + source.name);
+				Log.log("Showing source " + key);
 				// this.player.poster("/" + this.name + source.image_url);
-				this.player.src({
-					src: source.video_url,
+				this.players[0].src({
+					src: source,
 					type: 'application/x-mpegURL',
 				});
-				this.player.play();
-				this.currentIndex = this.currentIndex < this.sources.length - 1 ? this.currentIndex + 1 : 0;
+				this.players[0].play();
+				this.rotateSourcesOrder();
 			}
 		}
-		setTimeout(function () { self.rotateSource(); }, nextWaitTime);
+		setTimeout(function () { self.rotateSource(); }, Math.max(nextWaitTime, 1000));
 	},
 
 	/**
@@ -137,33 +188,46 @@ Module.register("MMM-rtsp-simple-server", {
 	 * @param {string} nodename attribute to be clear
 	 */
 	clearNode(nodename) {
-		try {
-			switch (nodename) {
-				case 'player':
-					if (this.player !== null) {
-						this.player.dispose();
+		switch (nodename) {
+			case 'players':
+				for (const [i, p] of this.players.entries()) {
+					if (p !== null) {
+						try { p.dispose(); } catch (_) { }
 					}
-					break;
-				default:
-					if (this[nodename] !== null) {
-						this[nodename].parentNode.removeChild(this[nodename])
+					this.players[i] = null;
+				}
+				break;
+			case 'playerWrappers':
+				for (const [i, p] of this.playerWrappers.entries()) {
+					if (p !== null) {
+						try { p.parentNode.removeChild(p) } catch (_) { }
 					}
-			}
-		} catch (e) { }
-
-		if (this.hasOwnProperty(nodename)) {
-			this[nodename] = null;
+					this.playerWrappers[i] = null;
+				}
+				break;
+			default:
+				if (this[nodename] !== null) {
+					try { this[nodename].parentNode.removeChild(this[nodename]) } catch (_) { }
+				}
+				if (this.hasOwnProperty(nodename)) {
+					this[nodename] = null;
+				}
 		}
+	},
+
+	elementReady: function (attribute, index = null) {
+		return this[attribute] !== null &&
+			(index === null || this[attribute][index] !== null);
 	},
 
 	/**
 	 * Show message in wrapper and hide the player
 	 */
 	showMessage() {
-		this.clearNode('player');
-		this.clearNode('playerWrapper');
+		this.clearNode('players');
+		this.clearNode('playerWrappers');
 
-		if (this.messageWrapper === null) {
+		if (!this.elementReady('messageWrapper')) {
 			this.messageWrapper = document.createElement("div");
 			this.messageWrapper.classList.add("message-container");
 			this.messageWrapper.style.width = this.config.width + "px";
@@ -173,23 +237,21 @@ Module.register("MMM-rtsp-simple-server", {
 		this.messageWrapper.innerHTML = this.message;
 	},
 
-	/**
-	 * Show player and hide the message
-	 */
-	showPlayer() {
+	createPlayer(index) {
 		var self = this;
-		this.clearNode('messageWrapper');
-
-		if (this.playerWrapper === null) {
-			this.playerWrapper = document.createElement("video-js");
-			this.playerWrapper.classList.add("player_" + this.name);
-			this.playerWrapper.setAttribute("id", "player_" + this.identifier);
-			this.wrapper.appendChild(this.playerWrapper);
+		if (!this.elementReady('playerWrappers', index)) {
+			var playerWrapper = document.createElement("video-js");
+			playerWrapper.classList.add("player_" + this.name);
+			playerWrapper.setAttribute("id", "player_" + this.identifier + "-0");
+			this.playerWrappers[index] = playerWrapper;
+			this.wrapper.appendChild(this.playerWrappers[index]);
 		}
 
-		if (this.player === null && this.playerWrapper.offsetParent !== null) {
+		if (!this.elementReady('players', index) &&
+			this.elementReady('playerWrappers', index) &&
+			this.playerWrappers[index].offsetParent !== null) {
 			try {
-				var player = videojs(this.playerWrapper, {
+				var options = {
 					autoplay: false,
 					controls: this.config.controls,
 					muted: "muted",
@@ -199,11 +261,58 @@ Module.register("MMM-rtsp-simple-server", {
 					fluid: true,
 					liveui: true,
 					loadingSpinner: false,
-				});
-				this.player = player;
+					enableSourceset: true,
+					html5: {
+						vhs: {
+							overrideNative: true,
+							experimentalBufferBasedABR: true,
+							experimentalLLHLS: true,
+							nativeAudioTracks: false,
+							nativeVideoTracks: false,
+						},
+					},
+				}
+				if (this.config.mode === 'tiles') {
+					options.autoplay = true;
+					options.sources = { src: Object.values(this.sources).at(index) };
+				}
+				const resetPlayer = () => {
+					try { this.players[index].dispose(); } catch (e) { Log.error(e); }
+					this.players[index] = null;
+					try { this.playerWrappers[index].parentNode.removeChild(this.playerWrappers[index]) } catch (_) { }
+					this.playerWrappers[index] = null;
+					this.createPlayer(index);
+				};
+				const resetPlayerInterval = () => {
+					(this.players[index].readyState() <= 2) ?
+						resetPlayer() :
+						null;
+				};
+				this.players[index] = videojs(this.playerWrappers[index], options);
+				this.players[index].setTimeout(resetPlayerInterval, this.defaults.retryDelay);
+				this.players[index].on('pause', resetPlayer);
+				this.players[index].on('stalled', resetPlayer);
+				this.players[index].on('error', resetPlayer);
 			} catch (e) {
-				this.clearNode('player');
+				if (this.players[index] !== null) {
+					try { this.players[index].dispose(); } catch (e) { }
+				}
+				this.players[index] = null;
 				Log.error(e);
+			}
+		}
+	},
+
+	/**
+	 * Show player and hide the message
+	 */
+	showPlayers() {
+		this.clearNode('messageWrapper');
+		if (this.config.mode === "rotate") {
+			this.createPlayer(0);
+		} else if (this.config.mode === "tiles") {
+			for (var i = 0; i < Object.values(this.sources).length; i++) {
+				this.createPlayer(i);
 			}
 		}
 	},
@@ -220,7 +329,7 @@ Module.register("MMM-rtsp-simple-server", {
 		if (this.message !== null) {
 			this.showMessage();
 		} else {
-			this.showPlayer();
+			this.showPlayers();
 		}
 
 		return this.wrapper;
@@ -230,8 +339,10 @@ Module.register("MMM-rtsp-simple-server", {
 	getScripts: function () {
 		const __lang = this.config.lang || this.language || "en";
 		return [
-			this.file("js/video.min.js"),
+			this.file("js/videojs.min.js"),
+			this.file("js/videojs-errors.min.js"),
 			this.file("js/lang/" + (__lang) + ".js"),
+			this.file("js/videojs-http-streaming-sync-workers.js"),
 			this.file("js/videojs-http-streaming.min.js"),
 		];
 	},

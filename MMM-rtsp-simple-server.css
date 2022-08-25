@@ -1,3 +1,4 @@
+/* stylelint-disable selector-class-pattern */
 .message-container {
   padding: 0;
   margin: 0;
@@ -8,4 +9,8 @@
 
 .MMM-rtsp-simple-server .vjs-loading-spinner {
   display: none !important;
+}
+
+.MMM-rtsp-simple-server video-js + video-js {
+  margin-top: 1rem !important;
 }

@@ -1,4 +1,5 @@
 node_modules
-bin/rtsp-simpleserver
-bin/rtsp-simpleserver.log
-bin/rtsp-simpleserver.yml
+bin/*.pem
+bin/rtsp-simple-server
+bin/rtsp-simple-server.log
+bin/rtsp-simple-server.yml

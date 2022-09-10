@@ -237,6 +237,14 @@ Module.register("MMM-rtsp-simple-server", {
 		this.messageWrapper.innerHTML = this.message;
 	},
 
+	resetPlayer: function (index) {
+		try { this.players[index].dispose(); } catch (e) { Log.error(e); }
+		this.players[index] = null;
+		try { this.playerWrappers[index].parentNode.removeChild(this.playerWrappers[index]) } catch (_) { }
+		this.playerWrappers[index] = null;
+		this.createPlayer(index);
+	},
+
 	createPlayer(index) {
 		var self = this;
 		if (!this.elementReady('playerWrappers', index)) {
@@ -276,23 +284,18 @@ Module.register("MMM-rtsp-simple-server", {
 					options.autoplay = true;
 					options.sources = { src: Object.values(this.sources).at(index) };
 				}
-				const resetPlayer = () => {
-					try { this.players[index].dispose(); } catch (e) { Log.error(e); }
-					this.players[index] = null;
-					try { this.playerWrappers[index].parentNode.removeChild(this.playerWrappers[index]) } catch (_) { }
-					this.playerWrappers[index] = null;
-					this.createPlayer(index);
-				};
 				const resetPlayerInterval = () => {
 					(this.players[index].readyState() <= 2) ?
-						resetPlayer() :
+						this.resetPlayer(index) :
 						null;
 				};
 				this.players[index] = videojs(this.playerWrappers[index], options);
 				this.players[index].setTimeout(resetPlayerInterval, this.defaults.retryDelay);
-				this.players[index].on('pause', resetPlayer);
-				this.players[index].on('stalled', resetPlayer);
-				this.players[index].on('error', resetPlayer);
+				this.players[index].on('pause', () => this.resetPlayer(index));
+				this.players[index].on('stalled', () => this.resetPlayer(index));
+				this.players[index].on('error', () => this.resetPlayer(index));
+				// reset programmatically
+				this.players[index].setInterval(() => this.resetPlayer(index), 3600 * 1000);
 			} catch (e) {
 				if (this.players[index] !== null) {
 					try { this.players[index].dispose(); } catch (e) { }

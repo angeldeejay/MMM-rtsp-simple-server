@@ -295,7 +295,7 @@ Module.register("MMM-rtsp-simple-server", {
 				this.players[index].on('stalled', () => this.resetPlayer(index));
 				this.players[index].on('error', () => this.resetPlayer(index));
 				// reset programmatically
-				this.players[index].setInterval(() => this.resetPlayer(index), 3600 * 1000);
+				this.players[index].setInterval(() => this.resetPlayer(index), 600 * 1000);
 			} catch (e) {
 				if (this.players[index] !== null) {
 					try { this.players[index].dispose(); } catch (e) { }

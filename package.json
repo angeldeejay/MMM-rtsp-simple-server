@@ -1,6 +1,6 @@
 {
   "name": "MMM-rtsp-simple-server",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Connects to a RTMP/RTSP/HLS Bridge for Wyze Cam server and display cameras",
   "main": "MMM-rtsp-simple-server.js",
   "author": "Andrés Vanegas",

@@ -79,7 +79,7 @@ module.exports = NodeHelper.create({
 				const key = this.cleanName(x);
 				this.rtspServerDefaults.paths[key] = {
 					source: x,
-					sourceProtocol: 'tcp'
+					sourceProtocol: 'udp'
 				};
 				this.sources[key] = '/' + this.name + '/stream/' + key + '/index.m3u8';
 			})

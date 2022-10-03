@@ -9,7 +9,7 @@ cd "$(dirname "${SCRIPT_PATH}")" >/dev/null
 SCRIPT_PATH="$(pwd)"
 popd >/dev/null
 
-rm -fr $SCRIPT_PATH/*.log $SCRIPT_PATH/*.yml
+rm -fr $SCRIPT_PATH/*.log
 if [[ ! -f "$SCRIPT_PATH/rtsp-simple-server" ]]; then
   ARCH=$(dpkg --print-architecture | sed 's:^arm64$:arm64v8:')
   LOCAL_IP=$(hostname -I | awk '{print $1}')

@@ -51,6 +51,7 @@ module.exports = NodeHelper.create({
 	readyState: false,
 	proxyReadyState: false,
 	busy: false,
+	uuid: null,
 
 	start: function () {
 		this.config = null;
@@ -70,20 +71,13 @@ module.exports = NodeHelper.create({
 			this.sendNotification("WAIT_CONFIG", true);
 			return;
 		}
+		this.uuid = config.__uuid;
 		this.busy = true;
-		var fileSources = [];
-		fs.readFile(__dirname + '/bin/rtsp-simple-server.yml', (err, data) => {
-			if (err) {
-				this.sendNotification("WAIT_CONFIG", true);
-				this.busy = false;
-				return;
-			}
-			fileSources = Object.keys(data.paths);
-		});
 		var receivedConfigSources = config.sources.filter((v, i, self) => self.indexOf(v) === i);
 		var payloadSources = receivedConfigSources.map(this.cleanName);
-		var currentSources = Object.keys(this.sources).concat(fileSources);
+		var currentSources = Object.keys(this.sources);
 		var newSources = payloadSources.filter(x => !currentSources.includes(x));
+		this.rtspServerDefaults.logFile = __dirname + `/bin/rtsp-simple-server-${this.uuid}.log`
 		this.rtspServerDefaults.readTimeout = Math.max(2, Math.round(config.updateInterval / 4000)) + "s";
 		this.rtspServerDefaults.writeTimeout = Math.max(2, Math.round(config.updateInterval / 4000)) + "s";
 
@@ -110,7 +104,7 @@ module.exports = NodeHelper.create({
 			try { self.rtspServer.kill(); } catch (_) { }
 		}
 		this.readyState = false;
-		fs.writeFile(__dirname + '/bin/rtsp-simple-server.yml', yaml.dump(
+		fs.writeFile(__dirname + `/bin/rtsp-simple-server-${self.uuid}.yml`, yaml.dump(
 			this.rtspServerDefaults,
 			{ noCompatMode: true }),
 			function (err) {
@@ -121,7 +115,7 @@ module.exports = NodeHelper.create({
 				} else {
 					self.rtspServer = spawn(
 						__dirname + '/bin/rtsp-simple-server',
-						[__dirname + '/bin/rtsp-simple-server.yml'],
+						[__dirname + `/bin/rtsp-simple-server-${self.uuid}.yml`],
 						{
 							stdio: 'inherit',
 						}

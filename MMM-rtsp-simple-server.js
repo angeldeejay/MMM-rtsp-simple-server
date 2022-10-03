@@ -28,6 +28,7 @@ Module.register("MMM-rtsp-simple-server", {
 		sources: [],
 	},
 	logPrefix: "MMM-rtsp-simple-server :: ",
+	uuid: null,
 
 	// Required version of MagicMirror
 	requiresVersion: "2.1.0",
@@ -49,6 +50,7 @@ Module.register("MMM-rtsp-simple-server", {
 			...this.defaults,
 			...this.config,
 		};
+		this.uuid = new UUID(4).toString();
 		for (var i in this.config.sources) {
 			this.playerWrappers[i] = null;
 			this.players[i] = null;
@@ -60,8 +62,7 @@ Module.register("MMM-rtsp-simple-server", {
 		}
 		this.sendNotification("SET_CONFIG", {
 			...this.config,
-			__protocol: window.location.protocol,
-			__port: window.location.port,
+			__uuid: this.uuid,
 		});
 	},
 
@@ -107,8 +108,7 @@ Module.register("MMM-rtsp-simple-server", {
 				setTimeout(function() {
 					self.sendNotification("SET_CONFIG", {
 						...self.config,
-						__protocol: window.location.protocol,
-						__port: window.location.port,
+						__uuid: self.uuid,
 					});		
 				}, 1000);
 			case "UPDATE_SOURCES":
@@ -351,6 +351,7 @@ Module.register("MMM-rtsp-simple-server", {
 	getScripts: function () {
 		const __lang = this.config.lang || this.language || "en";
 		return [
+			this.file("js/uuid.js"),
 			this.file("js/videojs.min.js"),
 			this.file("js/videojs-errors.min.js"),
 			this.file("js/lang/" + (__lang) + ".js"),

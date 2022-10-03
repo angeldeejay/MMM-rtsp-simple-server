@@ -50,6 +50,7 @@ module.exports = NodeHelper.create({
 	sources: {},
 	readyState: false,
 	proxyReadyState: false,
+	busy: false,
 
 	start: function () {
 		this.config = null;
@@ -65,11 +66,23 @@ module.exports = NodeHelper.create({
 	},
 
 	processConfig: function (config) {
-		this.config = config;
-
+		if (this.busy) {
+			this.sendNotification("WAIT_CONFIG", true);
+			return;
+		}
+		this.busy = true;
+		var fileSources = [];
+		fs.readFile(__dirname + '/bin/rtsp-simple-server.yml', (err, data) => {
+			if (err) {
+				this.sendNotification("WAIT_CONFIG", true);
+				this.busy = false;
+				return;
+			}
+			fileSources = Object.keys(data.paths);
+		});
 		var receivedConfigSources = config.sources.filter((v, i, self) => self.indexOf(v) === i);
 		var payloadSources = receivedConfigSources.map(this.cleanName);
-		var currentSources = Object.keys(this.sources);
+		var currentSources = Object.keys(this.sources).concat(fileSources);
 		var newSources = payloadSources.filter(x => !currentSources.includes(x));
 		this.rtspServerDefaults.readTimeout = Math.max(2, Math.round(config.updateInterval / 4000)) + "s";
 		this.rtspServerDefaults.writeTimeout = Math.max(2, Math.round(config.updateInterval / 4000)) + "s";
@@ -85,10 +98,13 @@ module.exports = NodeHelper.create({
 			})
 			Log.info(this.logPrefix + "Sources updated", this.sources)
 			this.resetRtspServer();
+		} else {
+			this.busy = false;
 		}
 	},
 
 	resetRtspServer: function () {
+		this.busy = true;
 		var self = this;
 		if (self.rtspServer !== null) {
 			try { self.rtspServer.kill(); } catch (_) { }
@@ -114,6 +130,7 @@ module.exports = NodeHelper.create({
 				}
 			}
 		);
+		this.busy = false;
 	},
 
 	sendNotification(notification, payload) {
@@ -128,7 +145,11 @@ module.exports = NodeHelper.create({
 
 		switch (notification) {
 			case "SET_CONFIG":
-				this.processConfig(payload);
+				if (this.busy) {
+					this.sendNotification("WAIT_CONFIG", true);
+				} else {
+					this.processConfig(payload);
+				}
 				if (!this.proxyReadyState) {
 					this.setProxy();
 				} else {

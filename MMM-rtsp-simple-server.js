@@ -101,7 +101,16 @@ Module.register("MMM-rtsp-simple-server", {
 
 	// Override socket notification received method
 	socketNotificationReceived: function (notification, payload) {
+		var self = this;
 		switch (notification.replace(this.name + "-", "")) {
+			case "WAIT_CONFIG":
+				setTimeout(function() {
+					self.sendNotification("SET_CONFIG", {
+						...self.config,
+						__protocol: window.location.protocol,
+						__port: window.location.port,
+					});		
+				}, 1000);
 			case "UPDATE_SOURCES":
 				this.updateSources(payload);
 				break;

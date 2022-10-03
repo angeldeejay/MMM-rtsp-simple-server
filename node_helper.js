@@ -68,7 +68,7 @@ module.exports = NodeHelper.create({
 
 	processConfig: function (config) {
 		if (this.busy) {
-			this.sendNotification("WAIT_CONFIG", true);
+			this.sendNotification("WAIT_CONFIG", config.__uuid);
 			return;
 		}
 		this.uuid = config.__uuid;
@@ -140,7 +140,7 @@ module.exports = NodeHelper.create({
 		switch (notification) {
 			case "SET_CONFIG":
 				if (this.busy) {
-					this.sendNotification("WAIT_CONFIG", true);
+					this.sendNotification("WAIT_CONFIG", payload.__uuid);
 				} else {
 					this.processConfig(payload);
 				}

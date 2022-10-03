@@ -105,12 +105,14 @@ Module.register("MMM-rtsp-simple-server", {
 		var self = this;
 		switch (notification.replace(this.name + "-", "")) {
 			case "WAIT_CONFIG":
-				setTimeout(function() {
-					self.sendNotification("SET_CONFIG", {
-						...self.config,
-						__uuid: self.uuid,
-					});		
-				}, 1000);
+				if (payload == this.uuid) {
+					setTimeout(function() {
+						self.sendNotification("SET_CONFIG", {
+							...self.config,
+							__uuid: self.uuid,
+						});		
+					}, 1000);
+				}
 			case "UPDATE_SOURCES":
 				this.updateSources(payload);
 				break;

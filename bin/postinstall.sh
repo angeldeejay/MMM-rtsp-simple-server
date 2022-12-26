@@ -14,7 +14,7 @@ if [[ ! -f "$SCRIPT_PATH/rtsp-simple-server" ]]; then
   ARCH=$(dpkg --print-architecture | sed 's:^arm64$:arm64v8:')
   LOCAL_IP=$(hostname -I | awk '{print $1}')
 
-  (curl -L "https://github.com/aler9/rtsp-simple-server/releases/download/v0.20.0/rtsp-simple-server_v0.20.0_linux_$ARCH.tar.gz" | tar xzf - -C $SCRIPT_PATH)
+  (curl -L "https://github.com/aler9/rtsp-simple-server/releases/download/v0.20.0/rtsp-simple-server_v0.21.0_linux_$ARCH.tar.gz" | tar xzf - -C $SCRIPT_PATH)
   chmod a+x $SCRIPT_PATH/rtsp-simple-server
 fi
 

@@ -21,8 +21,8 @@ module.exports = NodeHelper.create({
 		logLevel: 'info',
 		logDestinations: ["file", "stdout"],
 		logFile: __dirname + "/bin/rtsp-simple-server.log",
-		readTimeout: "2s",
-		writeTimeout: "2s",
+		readTimeout: "5s",
+		writeTimeout: "5s",
 		readBufferCount: 1024,
 		api: "no",
 		metrics: "no",
@@ -77,7 +77,7 @@ module.exports = NodeHelper.create({
 		var payloadSources = receivedConfigSources.map(this.cleanName);
 		var currentSources = Object.keys(this.sources);
 		var newSources = payloadSources.filter(x => !currentSources.includes(x));
-		this.rtspServerDefaults.logFile = __dirname + `/bin/rtsp-simple-server-${this.uuid}.log`
+		this.rtspServerDefaults.logFile = __dirname + `/bin/rtsp-simple-server.log`
 		this.rtspServerDefaults.readTimeout = Math.max(2, Math.round(config.updateInterval / 4000)) + "s";
 		this.rtspServerDefaults.writeTimeout = Math.max(2, Math.round(config.updateInterval / 4000)) + "s";
 
@@ -104,7 +104,7 @@ module.exports = NodeHelper.create({
 			try { self.rtspServer.kill(); } catch (_) { }
 		}
 		this.readyState = false;
-		fs.writeFile(__dirname + `/bin/rtsp-simple-server-${self.uuid}.yml`, yaml.dump(
+		fs.writeFile(__dirname + `/bin/rtsp-simple-server.yml`, yaml.dump(
 			this.rtspServerDefaults,
 			{ noCompatMode: true }),
 			function (err) {
@@ -115,7 +115,7 @@ module.exports = NodeHelper.create({
 				} else {
 					self.rtspServer = spawn(
 						__dirname + '/bin/rtsp-simple-server',
-						[__dirname + `/bin/rtsp-simple-server-${self.uuid}.yml`],
+						[__dirname + `/bin/rtsp-simple-server.yml`],
 						{
 							stdio: 'inherit',
 						}
